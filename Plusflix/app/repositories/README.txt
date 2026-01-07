@@ -1,0 +1,1 @@
+Folder dla funkcjonalności obiektów - repozytoria obiektów

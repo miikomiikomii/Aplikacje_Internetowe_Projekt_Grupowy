@@ -1,0 +1,1 @@
+Folder dla obiektów wykorzystywanych w ramach aplikacji (Filmy, Kategorie, Platformy streamingowe)

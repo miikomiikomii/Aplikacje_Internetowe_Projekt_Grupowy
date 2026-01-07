@@ -1,0 +1,1 @@
+Folder dla plików poszczególnych kart w aplikacji - index filmów, wyświetlanie danego filmu, formularz do edycji/dodawania filmu etc.

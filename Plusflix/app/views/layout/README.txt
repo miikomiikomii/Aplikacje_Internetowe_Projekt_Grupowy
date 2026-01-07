@@ -1,0 +1,1 @@
+Folder dla funkcjonalności strony - headery, footery - generalnie HTML oraz podpinanie css-a

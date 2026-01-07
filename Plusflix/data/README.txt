@@ -1,0 +1,1 @@
+Folder dla baz danych (.sql)

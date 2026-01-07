@@ -1,0 +1,1 @@
+Folder dla posterów do filmów/seriali
