@@ -15,11 +15,14 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
+// nawigacja przy pomocy url gdzie:
+// c <- wskazany Controller
+// a <- wskazana akcja(funkcja) z Controller-a
 $c = $_GET['c'] ?? 'titles';
 $a = $_GET['a'] ?? 'index';
 
-$controllerClass = ucfirst($c) . 'Controller';
-$actionMethod = $a . 'Action';
+$controllerClass = ucfirst($c) . 'Controller'; // np. TitlesController
+$actionMethod = $a . 'Action'; // np. indexAction
 
 if (!class_exists($controllerClass) || !method_exists($controllerClass, $actionMethod)) {
     http_response_code(404);
