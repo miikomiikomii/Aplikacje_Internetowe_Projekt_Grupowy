@@ -212,6 +212,44 @@ a{
 .btn.danger:hover{
     background: rgba(229,9,20,.18);
 }
+
+.form{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 640px;
+}
+.form label{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color:var(--muted);
+}
+
+input,select,textarea{
+    background: #111;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px;
+    color: var(--text);
+    font-size: 14px;
+}
+textarea{
+    resize:vertical;
+}
+.row2{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.actions{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
 @media(max-width:820px){
     .detail{
         grid-template-columns: 1fr;
