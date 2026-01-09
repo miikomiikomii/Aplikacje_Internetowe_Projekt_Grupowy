@@ -30,4 +30,20 @@ class DB
         $seed = file_get_contents(__DIR__ . '/../../data/seed.sql');
         $pdo->exec($seed);
     }
+
+    public static function reset(): void
+    {
+
+        if (self::$pdo !== null) {
+            self::$pdo = null;
+        }
+
+        $dbPath = __DIR__ . '/../../data/plusflix.db';
+
+        if (file_exists($dbPath)) {
+            unlink($dbPath);
+        }
+
+        self::conn();
+    }
 }
