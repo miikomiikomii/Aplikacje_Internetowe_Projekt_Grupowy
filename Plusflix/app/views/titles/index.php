@@ -1,6 +1,7 @@
 <h2 class="pageTitle">Katalog</h2>
 
 <?php
+// KM2: wartości filtrów (bezpieczne domyślne)
 $filters = $filters ?? ['q'=>'','type'=>'','year'=>0,'category'=>'','sort'=>'newest'];
 $categories = $categories ?? [];
 $years = $years ?? [];
@@ -91,18 +92,18 @@ $years = $years ?? [];
     <?php endif; ?>
 
     <?php foreach ($titles as $t): ?>
-        <a class="card" href="<?= url('titles','show',['id'=>$t->id]) ?>">
+        <a class="card" href="<?= url('titles','show',['id'=>$t->getId()]) ?>">
             <div class="posterWrap">
-                <img class="poster" src="public/posters/<?= h($t->poster) ?>" alt="poster">
+                <img class="poster" src="public/posters/<?= h($t->getPoster()) ?>" alt="poster">
             </div>
             <div class="meta">
                 <div class="titleRow">
-                    <div class="name"><?= h($t->name) ?></div>
-                    <div class="badge"><?= h($t->type) ?></div>
+                    <div class="name"><?= h($t->getName()) ?></div>
+                    <div class="badge"><?= h($t->getType()) ?></div>
                 </div>
-                <div class="sub"><?= h((string)$t->year) ?></div>
+                <div class="sub"><?= h((string)$t->getYear()) ?></div>
                 <div class="chips">
-                    <?php foreach (array_slice($t->categories, 0, 3) as $c): ?>
+                    <?php foreach (array_slice($t->getCategories(), 0, 3) as $c): ?>
                         <span class="chip"><?= h($c) ?></span>
                     <?php endforeach; ?>
                 </div>
