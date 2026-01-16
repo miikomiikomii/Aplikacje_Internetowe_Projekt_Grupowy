@@ -12,7 +12,9 @@ class CategoryRepository
     {
         $pdo = DB::conn();
         $pdo->prepare("INSERT OR IGNORE INTO categories(name) VALUES(:name)")->execute([':name' => $name]);
-        $id = $pdo->query("SELECT id FROM categories WHERE name=" . $pdo->quote($name))->fetchColumn();
+        $stmt = $pdo->prepare("SELECT id FROM categories WHERE name = :name");
+        $stmt->execute([':name' => $name]);
+        $id = $stmt->fetchColumn();
         return (int)$id;
     }
 

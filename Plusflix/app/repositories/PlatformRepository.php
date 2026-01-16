@@ -12,7 +12,9 @@ class PlatformRepository
     {
         $pdo = DB::conn();
         $pdo->prepare("INSERT OR IGNORE INTO platforms(name) VALUES(:name)")->execute([':name' => $name]);
-        $id = $pdo->query("SELECT id FROM platforms WHERE name=" . $pdo->quote($name))->fetchColumn();
+        $stmt = $pdo->prepare("SELECT id FROM platforms WHERE name = :name");
+        $stmt->execute([':name' => $name]);
+        $id = $stmt->fetchColumn();
         return (int)$id;
     }
 

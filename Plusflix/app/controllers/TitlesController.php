@@ -69,7 +69,7 @@ class TitlesController extends Controller
             http_response_code(400);
             exit('Brak wymaganych pól');
         }
-        if (!in_array($type, ['film','serial'], true )) {
+        if (!in_array($type, ['film','serial'], true)) {
             $type = 'film';
         }
         if ($year < 1900 || $year > 2100) {
