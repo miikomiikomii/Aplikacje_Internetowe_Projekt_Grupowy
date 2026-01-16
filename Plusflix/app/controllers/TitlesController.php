@@ -5,14 +5,55 @@ class TitlesController extends Controller
 
     public function indexAction(): void
     {
-        $titles = (new TitleRepository())->all();
-        $this->render('titles/index', compact('titles'));
+        $filters = [
+            'q' => trim((string)($_GET['q'] ?? '')),
+            'type' => trim((string)($_GET['type'] ?? '')),
+            'year' => (int)($_GET['year'] ?? 0),
+            'category' => trim((string)($_GET['category'] ?? '')),
+            'platform' => trim((string)($_GET['platform'] ?? '')),
+            'sort' => trim((string)($_GET['sort'] ?? '')),
+        ];
+
+        if (!in_array($filters['type'], ['film','serial'], true)) {
+            $filters['type'] = '';
+        }
+
+        // sort whitelist
+        $allowedSort = ['newest','oldest','name_asc','name_desc','year_asc','year_desc'];
+        if (!in_array($filters['sort'], $allowedSort, true)) {
+            $filters['sort'] = 'newest';
+        }
+
+        $repo = new TitlesRepository();
+        $titles = $repo->search($filters);
+
+        $categories = (new CategoryRepository())->all();
+        $platforms = (new PlatformRepository())->all();
+        $years = $repo->years();
+
+        $this->render('titles/index', compact('titles','filters','categories','platforms','years'));
+    }
+
+    public function autocompleteAction(): void
+    {
+
+        $q = trim((string)($_GET['q'] ?? ''));
+        if (strlen($q) < 2) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([]);
+            return;
+        }
+
+        $items = (new TitlesRepository())->suggest($q, 8);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($items, JSON_UNESCAPED_UNICODE);
     }
 
     public function showAction(): void
     {
         $id = (int)($_GET['id'] ?? 0);
-        $title = (new TitleRepository())->find($id);
+        $title = (new TitlesRepository())->find($id);
         if (!$title) { http_response_code(404); exit('Nie znaleziono'); }
         $this->render('titles/show', compact('title'));
     }
@@ -26,14 +67,14 @@ class TitlesController extends Controller
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
         $data = $this->readFormData();
-        $id = (new TitleRepository())->create($data);
+        $id = (new TitlesRepository())->create($data);
         $this->redirect(url('titles', 'show', ['id' => $id]));
     }
 
     public function editAction(): void
     {
         $id = (int)($_GET['id'] ?? 0);
-        $title = (new TitleRepository())->find($id);
+        $title = (new TitlesRepository())->find($id);
         if (!$title) { http_response_code(404); exit('Nie znaleziono'); }
         $this->render('titles/form', ['mode' => 'edit', 'title' => $title]);
     }
@@ -43,7 +84,7 @@ class TitlesController extends Controller
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
         $id = (int)($_GET['id'] ?? 0);
         $data = $this->readFormData();
-        (new TitleRepository())->update($id, $data);
+        (new TitlesRepository())->update($id, $data);
         $this->redirect(url('titles', 'show', ['id' => $id]));
     }
 
@@ -51,7 +92,7 @@ class TitlesController extends Controller
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
         $id = (int)($_GET['id'] ?? 0);
-        (new TitleRepository())->delete($id);
+        (new TitlesRepository())->delete($id);
         $this->redirect(url('titles', 'index'));
     }
 

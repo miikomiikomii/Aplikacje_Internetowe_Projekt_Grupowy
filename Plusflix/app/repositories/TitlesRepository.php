@@ -1,5 +1,5 @@
 <?php
-class TitleRepository
+class TitlesRepository
 {
     private CategoryRepository $catRepo;
     private PlatformRepository $platRepo;
@@ -135,8 +135,6 @@ class TitleRepository
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
-
-    
 
 
     public function all(): array
