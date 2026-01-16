@@ -1,6 +1,6 @@
 </main>
 <footer class="footer">
-    PLUSFIX
+    PLUSFLIX
 </footer>
 </body>
 </html>
