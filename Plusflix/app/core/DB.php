@@ -21,8 +21,8 @@ class DB
 
     private static function ensureInitialized(PDO $pdo): void
     {
-        $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='titles'")->fetchColumn();
-        if ($check) return;
+        $hasTitlesTable = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='titles'")->fetchColumn();
+        if ($hasTitlesTable) return;
 
         $schema = file_get_contents(__DIR__ . '/../../data/schema.sql');
         $pdo->exec($schema);
