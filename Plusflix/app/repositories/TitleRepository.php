@@ -10,6 +10,135 @@ class TitleRepository
         $this->platRepo = new PlatformRepository();
     }
 
+    public function search(array $filters = []): array
+    {
+        $q = trim((string)($filters['q'] ?? ''));
+        $type = trim((string)($filters['type'] ?? ''));
+        $year = (int)($filters['year'] ?? 0);
+        $category = trim((string)($filters['category'] ?? ''));
+        $platform = trim((string)($filters['platform'] ?? ''));
+        $sort = trim((string)($filters['sort'] ?? 'newest'));
+
+        $pdo = DB::conn();
+
+        $where = [];
+        $params = [];
+
+        if ($q !== '') {
+            $where[] = "(t.name LIKE :q OR t.description LIKE :q
+                OR EXISTS (
+                    SELECT 1 FROM title_category tc
+                    JOIN categories c ON c.id = tc.category_id
+                    WHERE tc.title_id = t.id AND c.name LIKE :q
+                )
+                OR EXISTS (
+                    SELECT 1 FROM title_platform tp
+                    JOIN platforms p ON p.id = tp.platform_id
+                    WHERE tp.title_id = t.id AND p.name LIKE :q
+                )
+            )";
+            $params[':q'] = '%' . $q . '%';
+        }
+
+        if ($type !== '' && in_array($type, ['film','serial'], true)) {
+            $where[] = "t.type = :type";
+            $params[':type'] = $type;
+        }
+
+        if ($year > 0) {
+            $where[] = "t.year = :year";
+            $params[':year'] = $year;
+        }
+
+        if ($category !== '') {
+            $where[] = "EXISTS (
+                SELECT 1 FROM title_category tc
+                JOIN categories c ON c.id = tc.category_id
+                WHERE tc.title_id = t.id AND c.name = :category
+            )";
+            $params[':category'] = $category;
+        }
+
+        if ($platform !== '') {
+            $where[] = "EXISTS (
+                SELECT 1 FROM title_platform tp
+                JOIN platforms p ON p.id = tp.platform_id
+                WHERE tp.title_id = t.id AND p.name = :platform
+            )";
+            $params[':platform'] = $platform;
+        }
+
+        $orderBy = "t.year DESC, t.name ASC";
+        switch ($sort) {
+            case 'oldest':   $orderBy = "t.year ASC, t.name ASC"; break;
+            case 'name_asc': $orderBy = "t.name ASC, t.year DESC"; break;
+            case 'name_desc':$orderBy = "t.name DESC, t.year DESC"; break;
+            case 'year_asc': $orderBy = "t.year ASC, t.name ASC"; break;
+            case 'year_desc':$orderBy = "t.year DESC, t.name ASC"; break;
+            case 'newest':
+            default:         $orderBy = "t.year DESC, t.name ASC"; break;
+        }
+
+        $sql = "SELECT t.* FROM titles t";
+        if ($where) {
+            $sql .= " WHERE " . implode(" AND ", $where);
+        }
+        $sql .= " ORDER BY " . $orderBy;
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $out = [];
+        foreach ($rows as $r) {
+            $id = (int)$r['id'];
+            $out[] = new Title(
+                $id,
+                $r['name'],
+                $r['type'],
+                (int)$r['year'],
+                $r['description'],
+                $r['poster'],
+                $this->catRepo->namesForTitle($id),
+                $this->platRepo->namesForTitle($id)
+            );
+        }
+        return $out;
+    }
+
+    public function years(): array
+    {
+        $pdo = DB::conn();
+        $rows = $pdo->query("SELECT DISTINCT year FROM titles ORDER BY year DESC")->fetchAll(PDO::FETCH_COLUMN);
+        return array_map('intval', $rows ?: []);
+    }
+
+    public function suggest(string $q, int $limit = 8): array
+    {
+        $q = trim($q);
+        if ($q === '') return [];
+
+        $pdo = DB::conn();
+        $limit = max(1, min(20, (int)$limit));
+
+        $sql = "SELECT id, name, type, year
+                FROM titles
+                WHERE name LIKE :pfx OR name LIKE :any
+                ORDER BY CASE WHEN name LIKE :pfx THEN 0 ELSE 1 END, year DESC, name ASC
+                LIMIT " . $limit;
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':pfx' => $q . '%',
+            ':any' => '%' . $q . '%',
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    
+
+
     public function all(): array
     {
         $pdo = DB::conn();
