@@ -5,8 +5,9 @@ class SetupController extends Controller
 
     public function resetAction(): void
     {
+        $this->requireAdmin();
         DB::reset();
-        $this->redirect(url('titles', 'index'));
+        $this->redirect(url('admin', 'dashboard'));
     }
 
 }
