@@ -82,6 +82,34 @@ class Title
         $this->platforms = $platforms;
     }
 
+    // --- KM3: oceny (łapki) ---
+    public function getRatingUp(): int
+    {
+        return $this->ratingUp;
+    }
+
+    public function getRatingDown(): int
+    {
+        return $this->ratingDown;
+    }
+
+    public function getRatingTotal(): int
+    {
+        return $this->ratingUp + $this->ratingDown;
+    }
+
+    public function getRatingUpPct(): int
+    {
+        $t = $this->getRatingTotal();
+        return $t > 0 ? (int)round(($this->ratingUp / $t) * 100) : 0;
+    }
+
+    public function getRatingDownPct(): int
+    {
+        $t = $this->getRatingTotal();
+        return $t > 0 ? 100 - $this->getRatingUpPct() : 0;
+    }
+
     public function __construct(
         private int $id,
         private string $name,
@@ -90,6 +118,8 @@ class Title
         private string $description,
         private string $poster,
         private array $categories = [],
-        private array $platforms = []
+        private array $platforms = [],
+        private int $ratingUp = 0,
+        private int $ratingDown = 0
     ) {}
 }
