@@ -79,7 +79,18 @@ class TitlesRepository
             default:         $orderBy = "t.year DESC, t.name ASC"; break;
         }
 
-        $sql = "SELECT t.* FROM titles t";
+        // KM3: dołączamy agregację ocen (łapki) do listy
+        $sql = "SELECT t.*,
+                    COALESCE(r.up_count, 0) AS up_count,
+                    COALESCE(r.down_count, 0) AS down_count
+                FROM titles t
+                LEFT JOIN (
+                    SELECT title_id,
+                        SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END) AS up_count,
+                        SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END) AS down_count
+                    FROM ratings
+                    GROUP BY title_id
+                ) r ON r.title_id = t.id";
         if ($where) {
             $sql .= " WHERE " . implode(" AND ", $where);
         }
@@ -100,7 +111,9 @@ class TitlesRepository
                 $r['description'],
                 $r['poster'],
                 $this->catRepo->namesForTitle($id),
-                $this->platRepo->namesForTitle($id)
+                $this->platRepo->namesForTitle($id),
+                (int)($r['up_count'] ?? 0),
+                (int)($r['down_count'] ?? 0)
             );
         }
         return $out;
@@ -161,7 +174,18 @@ class TitlesRepository
     public function find(int $id): ?Title
     {
         $pdo = DB::conn();
-        $stmt = $pdo->prepare("SELECT * FROM titles WHERE id=:id");
+        $stmt = $pdo->prepare("SELECT t.*,
+            COALESCE(r.up_count, 0) AS up_count,
+            COALESCE(r.down_count, 0) AS down_count
+            FROM titles t
+            LEFT JOIN (
+                SELECT title_id,
+                    SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END) AS up_count,
+                    SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END) AS down_count
+                FROM ratings
+                GROUP BY title_id
+            ) r ON r.title_id = t.id
+            WHERE t.id=:id");
         $stmt->execute([':id' => $id]);
         $r = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$r) return null;
@@ -174,8 +198,113 @@ class TitlesRepository
             $r['description'],
             $r['poster'],
             $this->catRepo->namesForTitle((int)$r['id']),
-            $this->platRepo->namesForTitle((int)$r['id'])
+            $this->platRepo->namesForTitle((int)$r['id']),
+            (int)($r['up_count'] ?? 0),
+            (int)($r['down_count'] ?? 0)
         );
+    }
+
+    // --- KM3: oceny (łapka w górę / w dół) ---
+    public function exists(int $id): bool
+    {
+        $pdo = DB::conn();
+        $stmt = $pdo->prepare("SELECT 1 FROM titles WHERE id=:id");
+        $stmt->execute([':id' => $id]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function rate(int $titleId, string $clientId, int $value): void
+    {
+        $pdo = DB::conn();
+        // Upsert: jeśli użytkownik już głosował, aktualizujemy
+        $sql = "INSERT INTO ratings(title_id, client_id, value, updated_at)
+                VALUES(:tid, :cid, :val, datetime('now'))
+                ON CONFLICT(title_id, client_id)
+                DO UPDATE SET value=excluded.value, updated_at=datetime('now')";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':tid' => $titleId,
+            ':cid' => $clientId,
+            ':val' => $value
+        ]);
+    }
+
+    public function rateMod(int $titleId, int $amount, int $value): void
+    {
+        $pdo = DB::conn();
+
+        $q = $pdo->prepare("
+        SELECT MAX(CAST(SUBSTR(client_id, 11) AS INTEGER)) AS mx
+        FROM ratings
+        WHERE title_id = :tid AND client_id LIKE 'admin_mod_%'
+    ");
+        $q->execute([':tid' => $titleId]);
+        $start = ((int)($q->fetchColumn() ?: 0)) + 1;
+
+        $sql = "INSERT INTO ratings(title_id, client_id, value, updated_at)
+            VALUES(:tid, :cid, :val, datetime('now'))";
+        $stmt = $pdo->prepare($sql);
+
+        for ($i = 0; $i < $amount; $i++) {
+            $clientId = 'admin_mod_' . ($start + $i);
+
+            $stmt->execute([
+                ':tid' => $titleId,
+                ':cid' => $clientId,
+                ':val' => $value
+            ]);
+        }
+    }
+
+    public function listModVotes(int $titleId, int $limit = 200): array
+    {
+        $pdo = DB::conn();
+
+        $sql = "SELECT
+              rowid AS id,
+              client_id,
+              value,
+              updated_at
+            FROM ratings
+            WHERE title_id = :tid
+            ORDER BY updated_at DESC, rowid DESC
+            LIMIT :lim";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':tid', $titleId, PDO::PARAM_INT);
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function deleteRatingByRowId(int $titleId, int $rowId): void
+    {
+        $pdo = DB::conn();
+        $stmt = $pdo->prepare("DELETE FROM ratings WHERE title_id = :tid AND rowid = :rid");
+        $stmt->execute([
+            ':tid' => $titleId,
+            ':rid' => $rowId
+        ]);
+    }
+
+
+    public function ratingStats(int $titleId): array
+    {
+        $pdo = DB::conn();
+        $stmt = $pdo->prepare("SELECT
+                SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END) AS up,
+                SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END) AS down
+            FROM ratings
+            WHERE title_id = :id");
+        $stmt->execute([':id' => $titleId]);
+        $r = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['up' => 0, 'down' => 0];
+        $up = (int)($r['up'] ?? 0);
+        $down = (int)($r['down'] ?? 0);
+        $total = $up + $down;
+        $upPct = $total > 0 ? (int)round(($up / $total) * 100) : 0;
+        $downPct = $total > 0 ? 100 - $upPct : 0;
+        return compact('up','down','total','upPct','downPct');
     }
 
     public function create(array $data): int
