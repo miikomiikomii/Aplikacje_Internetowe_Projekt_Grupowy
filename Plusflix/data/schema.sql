@@ -38,10 +38,15 @@ CREATE TABLE IF NOT EXISTS title_platform (
 CREATE TABLE IF NOT EXISTS ratings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title_id INTEGER NOT NULL,
-  value INTEGER NOT NULL CHECK (value IN (0,1)),
+  client_id TEXT NOT NULL,
+  value INTEGER NOT NULL CHECK (value IN (-1,1)),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(title_id, client_id),
   FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_ratings_title ON ratings(title_id);
 
 CREATE TABLE IF NOT EXISTS comments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

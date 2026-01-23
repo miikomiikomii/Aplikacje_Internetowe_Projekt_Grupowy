@@ -38,3 +38,38 @@ SELECT 2, id FROM platforms WHERE name='Netflix';
 
 INSERT INTO title_platform(title_id, platform_id)
 SELECT 3, id FROM platforms WHERE name='Disney+';
+
+
+
+ -- Arbitralnie wstawiony rating --
+INSERT INTO ratings (title_id, client_id, value) VALUES
+                                                     (1, 'seed_user_1', 1),
+                                                     (1, 'seed_user_2', 1),
+                                                     (1, 'seed_user_3', 1),
+                                                     (1, 'seed_user_4', 1),
+                                                     (1, 'seed_user_5', -1),
+                                                     (1, 'seed_user_6', 1),
+                                                     (1, 'seed_user_7', -1),
+                                                     (1, 'seed_user_8', 1),
+                                                     (1, 'seed_user_9', -1),
+                                                     (1, 'seed_user_11', -1),
+                                                     (1, 'seed_user_12', 1),
+                                                     (1, 'seed_user_13', 1),
+
+                                                     (2, 'seed_user_1', -1),
+                                                     (2, 'seed_user_2', -1),
+                                                     (2, 'seed_user_3', 1),
+                                                     (2, 'seed_user_4', -1),
+                                                     (2, 'seed_user_5', 1),
+                                                     (2, 'seed_user_6', -1),
+                                                     (2, 'seed_user_7', -1),
+                                                     (2, 'seed_user_8', 1),
+                                                     (2, 'seed_user_9', 1),
+
+                                                     (3, 'seed_user_1', 1),
+                                                     (3, 'seed_user_2', 1),
+                                                     (3, 'seed_user_3', -1),
+                                                     (3, 'seed_user_4', 1),
+                                                     (3, 'seed_user_5', 1),
+                                                     (3, 'seed_user_6', -1),
+                                                     (3, 'seed_user_7', 1);
