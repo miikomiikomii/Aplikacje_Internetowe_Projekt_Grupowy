@@ -26,7 +26,9 @@ $actionMethod = $a . 'Action'; // np. indexAction
 
 if (!class_exists($controllerClass) || !method_exists($controllerClass, $actionMethod)) {
     http_response_code(404);
-    echo "404 Not Found";
+    require 'app/views/layout/header.php';
+    require 'app/views/errors/404.php';
+    require 'app/views/layout/footer.php';
     exit;
 }
 
